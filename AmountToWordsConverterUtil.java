@@ -5,7 +5,7 @@ import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.Map;
 
-public class AmountToWordsConverter {
+public class AmountToWordsConverterUtil {
 
     private static final Map<Integer, String> NUMBER_WORDS = new HashMap<>();
     private static final Map<String, String> CURRENCY_MAP = new HashMap<>();
@@ -50,13 +50,10 @@ public class AmountToWordsConverter {
         CURRENCY_MAP.put("HKD", "HONG KONG DOLLARS");
     }
 
-    public static String convertToWords(BigDecimal amount, String currencyCode, String decimalMode) {
-        if (amount.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("Amount cannot be negative.");
-        }
-
-        long integerPart = amount.setScale(0, RoundingMode.DOWN).longValueExact();
-        int cents = amount.subtract(new BigDecimal(integerPart))
+    public static String convertToWords(String oldAmount, String currencyCode, String decimalMode) {
+        BigDecimal processedAmount = getBigDecimal(oldAmount, currencyCode, decimalMode);
+        long integerPart = processedAmount.setScale(0, RoundingMode.DOWN).longValueExact();
+        int cents = processedAmount.subtract(new BigDecimal(integerPart))
                 .multiply(new BigDecimal(100))
                 .setScale(0, RoundingMode.HALF_UP)
                 .intValueExact();
@@ -75,6 +72,33 @@ public class AmountToWordsConverter {
         result.append(" ONLY");
 
         return result.toString().trim();
+    }
+
+    private static BigDecimal getBigDecimal(String oldAmount, String currencyCode, String decimalMode) {
+        if (oldAmount == null || oldAmount.isEmpty()) {
+            throw new IllegalArgumentException("Amount cannot be empty.");
+        }
+        if (oldAmount.contains(",")) {
+            oldAmount = oldAmount.replace(",", "");
+        }
+        if (!oldAmount.matches("^\\d+(\\.\\d{1,2})?$")) {
+            throw new IllegalArgumentException("Invalid amount format.");
+        }
+        if (decimalMode == null || !decimalMode.equalsIgnoreCase("CENTS") && !decimalMode.equalsIgnoreCase("POINT") && !decimalMode.equalsIgnoreCase("FRACTION")) {
+            throw new IllegalArgumentException("Invalid decimal mode.");
+        }
+        if (currencyCode == null || !CURRENCY_MAP.containsKey(currencyCode)) {
+            throw new IllegalArgumentException("Invalid currency code.");
+        }
+
+        BigDecimal amount = new BigDecimal(oldAmount);
+        if (amount.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Amount cannot be negative.");
+        }
+
+        // 新增：去除金额字符串中的逗号
+        String amountStr = amount.toPlainString().replace(",", "");
+        return new BigDecimal(amountStr);
     }
 
     private static String convertIntegerPart(long number) {
@@ -157,13 +181,11 @@ public class AmountToWordsConverter {
 
     public static void main(String[] args) {
         // 示例测试
-        BigDecimal amount = new BigDecimal("112222111.01");
-        String result = convertToWords(amount, "USD", "CENTS");
+        String result = convertToWords("112,222,111.01", "USD", "CENTS");
         System.out.println(result);
         // 输出：SAY US DOLLARS TWO MILLION TWO HUNDRED TWENTY-TWO THOUSAND ONE HUNDRED AND ELEVEN AND CENTS ELEVEN ONLY
 
-        amount = new BigDecimal("888.88");
-        result = convertToWords(amount, "USD", "CENTS");
+        result = convertToWords("888.88", "USD", "CENTS");
         System.out.println(result);
         // 输出：SAY US DOLLARS EIGHT HUNDRED AND EIGHTY-EIGHT AND CENTS EIGHTY-EIGHT ONLY
     }

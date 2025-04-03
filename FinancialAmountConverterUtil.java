@@ -6,7 +6,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class FinancialAmountConverterUtils {
+public class FinancialAmountConverterUtil {
     // 常量定义
     private static final String CLEAN_PATTERN_STR = "(?i)\\b(SAY|US|DOLLARS|ONLY)\\b|\\s+AND\\s+";
     private static final String WORD_PATTERN_STR = "(?i)\\b(?:[A-Z]+(?:-[A-Z]+)*)\\b|CENTS|CENT|POINT";
